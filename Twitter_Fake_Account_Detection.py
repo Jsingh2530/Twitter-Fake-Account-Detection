@@ -4,26 +4,22 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from sklearn.ensemble import RandomForestClassifier
-# from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn import svm
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, classification_report, r2_score
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 from sklearn.linear_model import LinearRegression  
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.ensemble import StackingClassifier
+from catboost import CatBoostClassifier
 
 
 import tweepy
 import pprint
 from datetime import datetime, timezone
-
 
 
 
@@ -44,25 +40,26 @@ userID_list = [""]
 
 for user in userID_list:
     
-    Real Account
-    user = api.get_user(screen_name='Sunnypan')
+    # Real Account
+    # user = api.get_user(screen_name='imVkohli')
     
-    Fake Account
-    user = api.get_user(screen_name='Shyaimsek')
+    # # Fake Account
+    # user = api.get_user(screen_name='greentexts_bot')
     
-    
+    # #My Account
+    user = api.get_user(screen_name='SonuSood')
     
     user_info = {
-            "Username": [user.name],
-            "Followers": [user.followers_count],
+            "Username": [user.name],  
+            "Followers": [user.followers_count],  
             "Friends": [user.friends_count],
             "Tweets": [user.statuses_count],
             "Verified": [1 if user.description else 0],
             "Profile Image": [1 if user.description else 0],
             "Likes": [user.favourites_count],
             "Comments": [user.statuses_count],
-            "Location": [user.location],
-            "Description": [1 if user.description else 0],
+            "Location": [user.location],        
+            "Description": [1 if user.description else 0],   
             "URL": [1 if user.description else 0],
             "Status_Count": [user.statuses_count],
             "ID": [user.id],
@@ -77,7 +74,7 @@ account_age_seconds = (current_date - account_creation_date).total_seconds()
 account_age_years = account_age_seconds / 60 / 60 / 24 / 365
 
 user_info['Age'] = round(account_age_years)
-user_info['followers_friends_Ratio'] = (user.followers_count/user.friends_count)
+user_info['followers_friends_Ratio'] = (user.friends_count/user.followers_count)
 
 
 # # Get list of tweets from user's timeline
@@ -94,10 +91,12 @@ pprint.pprint(user_info,)
 print("\n")
 
 # Load the dataset
-data = pd.read_csv("Dataset/3000datamore.csv",encoding='latin1')
+data = pd.read_csv("Dataset/Final-Final.csv",encoding='latin1')
+
+
 
 # Split the data into features (X) and target (y)
-X = data.drop(["is_fake","name","screen_name","Account_Create_date"], axis=1)
+X = data.drop(["is_fake","name","screen_name","Account_Create_date","id"], axis=1)
 y = data["is_fake"]
 
 # Split the data into training and test sets
@@ -132,7 +131,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 
 
-# Train the Random Forest Classifier
+# # Train the Random Forest Classifier
 classifierRF = RandomForestClassifier(n_estimators=100, random_state=42)
 classifierRF.fit(X_train, y_train)
 # Make predictions on the test set
@@ -143,13 +142,15 @@ accuracy = accuracy_score(y_test, y_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 # report = classification_report(y_test, y_pred)
 print("Random Forest Classifier\n\nConfusion Matrix:\n", cm,"\n")
 print("Accuracy: {:.2f}%".format(accuracy * 100))
 # print(f'Report: {report}')
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
 
 # Train and evaluate the Logistic Regression Classifier
@@ -160,12 +161,29 @@ cm = confusion_matrix(y_test, y_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 print("Logistic Regression Classifier\n\nConfusion Matrix:\n", cm)
 print("Accuracy: {:.2f}%".format(accuracy_score(y_test, y_pred)*100))
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
+
+
+# Make predictions on the testing data with a threshold of 0.3
+y_pred_custom = classifierLR.predict(X_test, threshold=0.3)
+cm = confusion_matrix(y_test, y_pred_custom)
+precision = precision_score(y_test, y_pred_custom, average='macro')
+sensitivity = recall_score(y_test, y_pred_custom, average='macro')
+specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred_custom, average='macro')
+print("Logistic Regression Classifier\n\nConfusion Matrix:\n", cm)
+print("Accuracy: {:.2f}%".format(accuracy_score(y_test, y_pred_custom)*100))
+print(f"Precision: {precision:.2f}")
+print(f"Recall (Sensitivity): {sensitivity:.2f}")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
 # # Train and evaluate the Linear Regression Classifier
 
@@ -186,15 +204,17 @@ cm = confusion_matrix(y_test, y_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 print("K-Nearest Neighbors Classifier\n\nConfusion Matrix:\n", cm)
 print("Accuracy: {:.2f}%".format(accuracy_score(y_test, y_pred)*100))
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
 # # Train and evaluate the Support Vector Machines Classifier
 
-# classifierSVM = SVC(kernel='linear', random_state=0)
+# classifierSVM = SVC(kernel='linear')
 # classifierSVM.fit(X_train, y_train)
 # y_pred = classifierSVM.predict(X_test)
 # cm = confusion_matrix(y_test, y_pred)
@@ -210,14 +230,16 @@ cm = confusion_matrix(y_test, y_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 print("Gaussian Naive Bayes Classifier\n\nConfusion Matrix:\n", cm)
 print("Accuracy: {:.2f}%".format(accuracy_score(y_test, y_pred)*100))
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
 
-# Train the Decision Tree Classifier
+# # Train the Decision Tree Classifier
 classifierDT = DecisionTreeClassifier(criterion="entropy", random_state=42)
 classifierDT.fit(X_train, y_train)
 y_pred = classifierDT.predict(X_test)
@@ -225,11 +247,13 @@ cm = confusion_matrix(y_test, y_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 print("Decision Tree Classifier\n\nConfusion Matrix:\n", cm)
 print("Accuracy: {:.2f}%".format(accuracy_score(y_test, y_pred)*100))
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
 
 # Train the AdaBoost classifier
@@ -241,16 +265,18 @@ acc = accuracy_score(y_test, y_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 print("AdaBoost Classifier\n\nConfusion Matrix:\n", cm)
 print("Accuracy: {:.2f}%".format(acc*100))
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
 
 
 
 # Train an XGBoost model
-xgb = XGBClassifier()
+xgb = XGBClassifier(n_estimators=100)
 xgb.fit(X_train, y_train)
 xgb_pred = xgb.predict(X_test)
 cm = confusion_matrix(y_test, y_pred)
@@ -258,11 +284,51 @@ xgb_acc = accuracy_score(y_test, xgb_pred)
 precision = precision_score(y_test, y_pred, average='macro')
 sensitivity = recall_score(y_test, y_pred, average='macro')
 specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
 print("XGBoost classifier\n\nConfusion Matrix:\n", cm)
 print("Accuracy: {:.2f}%".format(xgb_acc*100))
 print(f"Precision: {precision:.2f}")
 print(f"Recall (Sensitivity): {sensitivity:.2f}")
-print(f"Specificity: {specificity:.2f}","\n")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
+
+
+# Gradient Boosting Classifier
+gb_clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
+gb_clf.fit(X_train, y_train)
+y_pred = gb_clf.predict(X_test)
+cm = confusion_matrix(y_test, y_pred)
+GB_acc = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average='macro')
+sensitivity = recall_score(y_test, y_pred, average='macro')
+specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
+print("Gradient Boosting classifier\n\nConfusion Matrix:\n", cm)
+print("Accuracy: {:.2f}%".format(xgb_acc*100))
+print(f"Precision: {precision:.2f}")
+print(f"Recall (Sensitivity): {sensitivity:.2f}")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
+
+
+# CatBoost Classifier
+cat_clf = CatBoostClassifier(iterations=100, learning_rate=0.1, depth=3, loss_function='Logloss', random_state=42)
+cat_clf.fit(X_train, y_train)
+y_pred = cat_clf.predict(X_test)
+cm = confusion_matrix(y_test, y_pred)
+Cat_acc = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average='macro')
+sensitivity = recall_score(y_test, y_pred, average='macro')
+specificity = cm[0,0] / (cm[0,0] + cm[0,1])
+f1 = f1_score(y_test, y_pred, average='macro')
+print("CatBoost classifier\n\nConfusion Matrix:\n", cm)
+print("Accuracy: {:.2f}%".format(Cat_acc*100))
+print(f"Precision: {precision:.2f}")
+print(f"Recall (Sensitivity): {sensitivity:.2f}")
+print(f"Specificity: {specificity:.2f}")
+print(f"F1 Score: {f1:.2f}","\n")
+
+
 
 
 # Function to predict from Random Forest Classifier whether an input account is fake or real
@@ -305,6 +371,16 @@ def predict_fake_account_XGB(classifier, account_features):
     prediction = xgb.predict([account_features])
     return "Fake" if prediction[0] else "Real"
 
+# Function to predict from Gradient Boosting Classifier whether an input account is fake or real
+def predict_fake_account_GB(classifier, account_features):
+    prediction = gb_clf.predict([account_features])
+    return "Fake" if prediction[0] else "Real"
+
+# Function to predict from CatBoost Classifier whether an input account is fake or real
+def predict_fake_account_CAT(classifier, account_features):
+    prediction = cat_clf.predict([account_features])
+    return "Fake" if prediction[0] else "Real"
+
 
 # Example usage
 
@@ -321,9 +397,16 @@ Followers_Freinds = (user.followers_count/user.friends_count)
 Verified = 1 if user.description else 0
 Protected = 1 if user.protected else 0
 Retweets = user.statuses_count
+# Account Details fetching from Twitter API
+# input_account = [statuses_count,followers_count,friends_count,favourites_count,listed_count,profile_image,description,Age,Followers_Freinds,Verified,Protected,Retweets]
 
-input_account = [id,statuses_count,followers_count,friends_count,favourites_count,listed_count,profile_image,description,Age,Followers_Freinds,Verified,Protected,Retweets]
-# input_account = [45255362,1351,35,501,0,1,1,1,8,0.1521452,0,1,78]
+# # Fake Accounts Details
+input_account = [61,13,582,0,0,1,0,5,0.046099291,1,0,26]
+
+# input_account = [36,16,451,0,0,0,0,3,0.036099291,1,0,47]
+
+# # Real Accounts Details
+# input_account = [56,26,611,0,0,1,0,4,0.042553191,0,0,36]
 
 print("Input Account is from Random Forest Classifier is :", predict_fake_account_RF(classifierRF, input_account),'\n')
 
@@ -331,7 +414,7 @@ print("Input Account is Logistic Regression Classifier is :", predict_fake_accou
 
 print("Input Account is K-Nearest Neighbors Classifier is :", predict_fake_account_KNN(classifierKNN, input_account),'\n')
 
-# print("Input Account is Support Vector Machines Classifier is :", predict_fake_account_SVM(classifierSVM, input_account),'\n')
+# # print("Input Account is Support Vector Machines Classifier is :", predict_fake_account_SVM(classifierSVM, input_account),'\n')
 
 print("Input Account is Gaussian Naive Bayes Classifier is :", predict_fake_account_G(classifierG, input_account),'\n')
 
@@ -341,4 +424,65 @@ print("Input Account is Ada Boost Classifier is :", predict_fake_account_AB(clas
 
 # print("Input Account is XGB Classifier is :", predict_fake_account_XGB(classifierDT, input_account),'\n')
 
+print("Input Account is Gradient Boosting Classifier is :", predict_fake_account_GB(classifierDT, input_account),'\n')
 
+print("Input Account is CatBoost Classifier is :", predict_fake_account_CAT(classifierDT, input_account),'\n')
+
+
+# Calculate the majority vote
+vote = [predict_fake_account_RF(classifierDT, input_account), predict_fake_account_LR(classifierDT, input_account), predict_fake_account_KNN(classifierDT, input_account), predict_fake_account_G(classifierDT, input_account), predict_fake_account_DT(classifierDT, input_account), predict_fake_account_AB(classifierDT, input_account), predict_fake_account_GB(classifierDT, input_account), predict_fake_account_CAT(classifierDT, input_account)]
+
+print(vote,'\n')
+
+num_real = vote.count('Real')
+num_fake = vote.count('Fake')
+print('\n')
+
+if num_real > num_fake:
+    print('The final prediction for this account is : Real Account')
+else:
+    print('The final prediction for this account is : Fake Account')
+
+print('\n')
+
+# majority_vote = max(set(vote), key = vote.count)
+
+# # Print the majority vote
+# print("Majority Vote Result: ", majority_vote)
+
+
+# # Define weights for each classifier
+# weights = [0.2, 0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1]
+
+# # Calculate weighted vote
+# weighted_vote = sum([weights[i]*vote[i] for i in range(len(vote))])
+
+# # Print the weighted vote
+# print("Weighted Vote Result: ", weighted_vote)
+
+# # Define weights for each classifier
+# weights = [0.2, 0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1]
+
+# # Get predicted class labels for each classifier
+# labels = [predict_fake_account_RF, predict_fake_account_LR, predict_fake_account_KNN, predict_fake_account_G, predict_fake_account_DT, predict_fake_account_AB, predict_fake_account_GB, predict_fake_account_CAT]
+# # Calculate the frequency of each label
+
+
+# # Calculate the frequency of each label
+# label_counts = {}
+# for label in labels:
+#     if label not in label_counts:
+#         label_counts[label] = 0
+#     label_counts[label] += 1
+
+# # Get the label with the highest frequency or highest weighted vote in case of a tie
+# max_count = max(label_counts.values())
+# predicted_labels = [label for label, count in label_counts.items() if count == max_count]
+# if len(predicted_labels) == 1:
+#     predicted_label = predicted_labels[0]
+# else:
+#     predicted_label = max(predicted_labels, key=lambda label: labels.index(label))
+#     predicted_label = predicted_label()  # Call the function to get the numerical value
+
+# # Print the predicted label
+# print("Ensemble Prediction: ", predicted_label)
